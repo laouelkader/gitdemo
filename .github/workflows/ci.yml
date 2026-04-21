@@ -1,40 +1,36 @@
+name: CI Tests
 
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
 
-stages:
-  - test:unit
-   
-test:unit:api:
-  stage: test:unit
-  script:
-    - npm install
-    - npm run test:unit -- --testPathPattern=api
-  parallel:
-    matrix:
-      - NODE_VERSION: ["18", "20"]
-  artifacts:
-    reports:
-      junit: junit-api.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
+    strategy:
+      matrix:
+        node-version: [18, 20]
 
-test:unit:services:
-  stage: test:unit
-  script:
-    - npm run test:unit -- --testPathPattern=services
-  parallel: 3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-test:unit:components:
-  stage: test:unit
-  script:
-    - npm run test:unit -- --testPathPattern=components
-  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
 
+      - name: Install dependencies
+        run: npm install
 
+      - name: Run API tests
+        run: npm run test:unit -- --testPathPattern=api
 
+      - name: Run services tests
+        run: npm run test:unit -- --testPathPattern=services
 
-
-
-
-  
+      - name: Run components tests
+        run: npm run test:unit -- --testPathPattern=components
