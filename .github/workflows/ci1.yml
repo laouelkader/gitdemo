@@ -1,0 +1,79 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+
+  test-api:
+    name: API Tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run API tests
+        run: npm run test:unit -- --testPathPattern=api
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api-node-${{ matrix.node-version }}
+          path: coverage/cobertura-coverage.xml
+
+
+  test-services:
+    name: Services Tests (parallel 3)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm install
+
+      - name: Run sharded tests
+        run: npm run test:unit -- --testPathPattern=services --shard=${{ matrix.shard }}/3
+
+
+  test-components:
+    name: Components Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm install
+
+      - name: Run component tests
+        run: npm run test:unit -- --testPathPattern=components
+
+      - name: Coverage check
+        run: |
+          echo "Lines coverage check (if your tool outputs it)"
